@@ -7,10 +7,10 @@ import numpy as np
 from transformers import AutoTokenizer, AutoModelForCausalLM
 import torch
 from nltk.translate.bleu_score import sentence_bleu
-# from rouge import Rouge  # 移除 ROUGE 的导入
+# from rouge import Rouge 
 from bert_score import score as bert_score_function
 import jieba
-import statistics  # 新增，用于计算方差
+import statistics 
 
 # 设置 Hugging Face 缓存路径
 cache_dir = '/scratch/hw2933/huggingface_cache'
@@ -50,10 +50,9 @@ def search(query, top_k=3):
     results = [(retrieval_questions[i], retrieval_answers[i], distances[0][j]) for j, i in enumerate(indices[0])]
     return results
 
-# 加载生成模型
+# loading model
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-# 修改分词器和模型的加载路径，同时指定 cache_dir
 model_dir = "/scratch/hw2933/new/model/models--hfl--llama-3-chinese-8b-instruct-v3/snapshots/e5f2d57bd555a2411c5773f64c8f2eedb95c37d0"
 
 tokenizer = AutoTokenizer.from_pretrained(model_dir, cache_dir=cache_dir)
@@ -65,10 +64,8 @@ def generate_answer(query, top_k=3):
     print('Search 完成')
     print(f"共检索到 {top_k} 个结果。")
     
-    # 使用最相关的检索结果
     most_relevant = results[0]
     
-    # 构建新的 prompt，添加明确的回答标记
     context = (
         f"请根据以下信息回答问题：\n"
         f"问题：{query}\n"
@@ -76,13 +73,11 @@ def generate_answer(query, top_k=3):
         f"回答："
     )
     
-    # 可选择是否打印生成的 prompt
     # print(f"生成的 prompt: {context}")
     
     input_text = context
     input_ids = tokenizer.encode(input_text, return_tensors="pt").to(device)
     
-    # 设置生成参数，添加 eos_token_id
     generated_ids = model_llama.generate(
         input_ids,
         max_new_tokens=512,
@@ -94,10 +89,7 @@ def generate_answer(query, top_k=3):
     )
     generated_text = tokenizer.decode(generated_ids[0], skip_special_tokens=True)
     
-    # 提取“回答：”之后的内容，作为生成的答案
     answer = generated_text.split("回答：")[-1].strip()
-    
-    # 打印生成的答案
     print(f"生成的答案（带 RAG）：{answer}")
     
     return answer
@@ -111,13 +103,11 @@ def generate_answer_no_rag(query):
         f"回答："
     )
     
-    # 可选择是否打印生成的 prompt
     # print(f"生成的 prompt（无 RAG）: {context}")
     
     input_text = context
     input_ids = tokenizer.encode(input_text, return_tensors="pt").to(device)
     
-    # 设置生成参数，添加 eos_token_id
     generated_ids = model_llama.generate(
         input_ids,
         max_new_tokens=512,
@@ -129,15 +119,12 @@ def generate_answer_no_rag(query):
     )
     generated_text = tokenizer.decode(generated_ids[0], skip_special_tokens=True)
     
-    # 提取“回答：”之后的内容，作为生成的答案
     answer = generated_text.split("回答：")[-1].strip()
     
-    # 打印生成的答案
     print(f"生成的答案（无 RAG）：{answer}")
     
     return answer
 
-# 计算评价指标
 def compute_scores(generated_answer, reference_answers):
     # 使用 Jieba 对中文文本进行分词
     generated_tokens = list(jieba.cut(generated_answer))
@@ -152,7 +139,6 @@ def compute_scores(generated_answer, reference_answers):
     
     return bleu_score, bert_score_values
 
-# 定义函数来设置输出文件
 def set_output_file(file_path):
     sys.stdout = open(file_path, 'w', encoding='utf-8')
 
@@ -176,11 +162,11 @@ bertscore_R_no_rag = []
 bertscore_F1_no_rag = []
 
 num_samples = len(test_questions) - 1  # 测试集中的问题数量
-# num_samples = 10  # 你可以根据需要修改样本数量
+# num_samples = 10 
 
 for i in range(num_samples):
     query = test_questions[i]
-    reference_answers = [test_answers[i]]  # 假设每个问题只有一个参考答案
+    reference_answers = [test_answers[i]] 
     
     print(f"处理第 {i+1} 个问题: {query}")
     
@@ -197,16 +183,16 @@ for i in range(num_samples):
     
     # 生成答案（不带 RAG）
     generated_answer_no_rag = generate_answer_no_rag(query)
-    # 计算评价指标
+
     bleu_no_rag, bert_score_no_rag = compute_scores(generated_answer_no_rag, reference_answers)
     
-    # 累加分数
+
     bleu_scores_no_rag.append(bleu_no_rag)
     bertscore_P_no_rag.append(bert_score_no_rag[0])
     bertscore_R_no_rag.append(bert_score_no_rag[1])
     bertscore_F1_no_rag.append(bert_score_no_rag[2])
     
-    # 可选：打印中间结果
+
     print(f"带 RAG - BLEU: {bleu_rag}, BERTScore F1: {bert_score_rag[2]}")
     print(f"不带 RAG - BLEU: {bleu_no_rag}, BERTScore F1: {bert_score_no_rag[2]}")
     print("\n")
