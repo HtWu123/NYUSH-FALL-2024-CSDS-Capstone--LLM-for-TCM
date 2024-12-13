@@ -28,16 +28,16 @@ test_file_path = '/scratch/hw2933/new/dataset/huatuo_test.csv'
 retrieval_data = pd.read_csv(retrieval_file_path)
 train_data = retrieval_data
 test_data = pd.read_csv(test_file_path, encoding='utf-8')
-# 将数据划分为 90% 的训练集和 10% 的测试集
 
-# 准备训练和测试问题及答案
+
+
 train_questions = train_data['query'].tolist()
 train_answers = train_data['response'].tolist()
 
 test_questions = test_data['questions'].tolist()
 test_answers = test_data['answers'].tolist()
 
-# 初始化适用于中文的 SentenceTransformer 模型
+
 model_name = 'shibing624/text2vec-base-chinese'
 model = SentenceTransformer(model_name, cache_folder=cache_dir)
 print(f"SentenceTransformer model '{model_name}' loaded.")
@@ -105,7 +105,7 @@ def generate_answer(query, top_k=5):
     generated_text = tokenizer.decode(generated_ids[0], skip_special_tokens=True)
     answer = generated_text.split("回答：")[-1].strip()
     print(f"Generated answer (with RAG): {answer}")
-    return answer  # 只返回答案字符串
+    return answer 
 
 # 生成不包含 RAG 的答案
 def generate_answer_no_rag(query):
@@ -238,33 +238,28 @@ def plot_results(metric_name, rag_scores, no_rag_scores, save_path):
         'Std Dev': [rag_std, no_rag_std]
     })
 
-    # Set plot style
     sns.set(style='whitegrid')
 
-    # Create the barplot
     plt.figure(figsize=(10, 7))
     ax = sns.barplot(x='Method', y='Mean Score', data=data, errorbar=None, palette='viridis')  # Updated ci and palette
 
-    # Add error bars
+
     ax.errorbar(x=[0, 1], y=data['Mean Score'], yerr=data['Std Dev'], fmt='none', c='black', capsize=10)
 
-    # Set labels and title
+
     plt.ylabel(metric_name, fontsize=14)
     plt.xlabel('Method', fontsize=14)
     plt.title(f'{metric_name} Comparison', fontsize=16)
 
-    # Adjust tick parameters
+
     plt.xticks(fontsize=12)
     plt.yticks(fontsize=12)
 
-    # Save and close the plot
     plt.tight_layout()
     plt.savefig(save_path)
     plt.close()
 
 
-
-# # 生成图表
 # plot_results("BLEU Score", bleu_scores_rag, bleu_scores_no_rag, "/scratch/hw2933/new/bleu_score_comparison.png")
 # plot_results("BERTScore Precision", bertscore_P_rag, bertscore_P_no_rag, "/scratch/hw2933/new/bertscore_precision_comparison.png")
 # plot_results("BERTScore Recall", bertscore_R_rag, bertscore_R_no_rag, "/scratch/hw2933/new/bertscore_recall_comparison.png")
